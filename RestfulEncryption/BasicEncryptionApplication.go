@@ -52,7 +52,7 @@ func ExecuteBasicEncryptionApplicationDemo() {
 	fmt.Println("Key (Base64): " + aesConfig.Key)
 
 	sampleData := "Hello, World! This is a test of AES encryption."
-	fmt.Println("Encrypting Sample Data..." + sampleData)
+	fmt.Println("Encrypting Sample Data: " + sampleData)
 
 	encryptedData, err := encrypt(aesConfig, []byte(sampleData))
 	if err != nil {
@@ -62,7 +62,7 @@ func ExecuteBasicEncryptionApplicationDemo() {
 	fmt.Println("Data Encrypted Successfully.")
 	fmt.Println("Encrypted Data (Base64):", encryptedData.data)
 
-	fmt.Println("Decrypting Sample Data...")
+	fmt.Println("\nDecrypting Sample Data...")
 	decryptedData, err := decrypt(encryptedData)
 	if err != nil {
 		fmt.Println("Error decrypting data:", err)

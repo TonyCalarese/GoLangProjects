@@ -46,14 +46,19 @@ func NewAESConfiguration(byteSize int) (*AESConfiguration, error) {
 // Attempt to generate a new AES key of specified byte size (16, 24, or 32 bytes)
 // throw an error if there is a problem with the generation
 func (config AESConfiguration) GenerateKey() AESConfiguration {
-	key := make([]byte, config.byteSize)
+
 	//Check for valid key size before generating
 	if !config.ValidateAESKeySize() {
 		log.Fatalf("Invalid AES key size")
 		return config // Return the config even if there is an error
 	}
 
-	config.Key = base64.StdEncoding.EncodeToString(key)
+	// The output string will be longer, but the decoded key will be exactly 32 bytes.
+	// Base64-encoded 32 bytes results in 44 characters (with padding).
+	// Calculated: 4 * (ceil(32 / 3)) = 4 * 11 = 44.
+	// We will want to chop off the characters to meet the size requirements due to this string size increase
+	key := make([]byte, config.byteSize)
+	config.Key = base64.StdEncoding.EncodeToString(key)[:config.byteSize] //Chop off the key strings to meet the size requirements for AES
 	return config
 }
 

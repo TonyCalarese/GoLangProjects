@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
+	"log"
 )
 
 // --------------------------------------------------------
@@ -27,18 +28,22 @@ func (e *EncryptedDataset) SetData(d []byte)                      { e.data = d }
 
 // When provided with valid confirguration and plain text, encrypt the datq and return an EncryptedDataset struct
 func encrypt(config AESConfiguration, plaintext []byte) (EncryptedDataset, error) {
+
 	block, err := aes.NewCipher([]byte(config.GetKey()))
 	if err != nil {
+		log.Println("Error creating  Step 1:", err)
 		return EncryptedDataset{}, err
 	}
 
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
+		log.Println("Error creating  Step 2:", err)
 		return EncryptedDataset{}, err
 	}
 
 	nonce := make([]byte, gcm.NonceSize())
 	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+		log.Println("Error creating  Step 3:", err)
 		return EncryptedDataset{}, err
 	}
 
