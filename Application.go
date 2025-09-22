@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	c4 "github.com/accal/GoLangProjects/Connect4"
+	crypt "github.com/accal/GoLangProjects/RestfulEncryption"
 )
 
 // ----------------------------------------------------------------
@@ -27,6 +28,7 @@ type Program struct {
 var programs = map[int]Program{
 	0: {Name: "Quit", MainExecution: func() { fmt.Println("-------- Ending Simulation -------") }},
 	1: {Name: "Connect4", MainExecution: func() { c4.PlayConnect4() }},
+	2: {Name: "NonRestful Encryption Service Demo", MainExecution: func() { crypt.ExecuteBasicEncryptionApplicationDemo() }},
 }
 
 // ----------------------------------------------------------------
@@ -53,11 +55,11 @@ func main() {
 
 	prog, ok := programs[choice]
 	if !ok {
-		fmt.Printf("You selected game %d. (Hook this up to start the actual game.)\n", choice)
+		fmt.Printf("Your Selection was not valid, please try again with a valid selection", choice)
 		return
 	}
 
-	fmt.Printf("You selected game %d: %s\n", choice, prog.Name)
+	fmt.Printf("You selected %d: %s\n", choice, prog.Name)
 	if prog.MainExecution != nil {
 		prog.MainExecution()
 	}
