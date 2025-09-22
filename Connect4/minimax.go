@@ -2,23 +2,25 @@ package connect4
 
 import (
 	"math"
-
-	board "github.com/accal/GoLangProjects/Connect4"
 )
 
 // Find the best possible outcome evaluation for originalPlayer
 // depth is initially the maximum depth
-func MiniMax(board board.Board, maximizing bool, originalPlayer Piece, depth uint) float32 {
+func MiniMax(b C4Board, maximizing bool, p Player, depth uint) float32 {
+	//if the game is over then we shouldn't be trying to go through the recursion
+	if b.IsGameOver() {
+		return 0
+	}
 	// Base case — terminal position or maximum depth reached
-	if board.IsWin() || board.IsDraw() || depth == 0 {
-		return board.Evaluate(originalPlayer)
+	if b.IsWin() || b.IsDraw() || depth == 0 {
+		return b.Evaluate(p.Piece)
 	}
 
 	// Recursive case - maximize your gains or minimize the opponent's gains
 	if maximizing {
 		var bestEval float32 = -math.MaxFloat32 // arbitrarily low starting point
-		for _, move := range board.LegalMoves() {
-			result := MiniMax(board.MakeMove(move), false, originalPlayer, depth-1)
+		for _, move := range b.LegalMoves() {
+			result := MiniMax(b.MakeMove(p, move), false, p, depth-1)
 			if result > bestEval {
 				bestEval = result
 			}
@@ -26,8 +28,8 @@ func MiniMax(board board.Board, maximizing bool, originalPlayer Piece, depth uin
 		return bestEval
 	} else { // minimizing
 		var worstEval float32 = math.MaxFloat32
-		for _, move := range board.LegalMoves() {
-			result := MiniMax(board.MakeMove(move), true, originalPlayer, depth-1)
+		for _, move := range b.LegalMoves() {
+			result := MiniMax(b.MakeMove(p, move), true, p, depth-1)
 			if result < worstEval {
 				worstEval = result
 			}
@@ -46,10 +48,10 @@ type Eval struct {
 // the current position looking up to depth ahead.
 // This version looks at each legal move from the starting position
 // concurrently (runs minimax on each legal move concurrently)
-func ConcurrentFindBestMove(board board.Board, depth uint) Move {
+func ConcurrentFindBestMove(b C4Board, p Player, depth uint) Move {
 	var bestMove Move
 	var bestScore float32 = -math.MaxFloat32
-	legalMoves := board.LegalMoves()
+	legalMoves := b.LegalMoves()
 
 	scores := make(chan Eval, len(legalMoves))
 
@@ -57,7 +59,7 @@ func ConcurrentFindBestMove(board board.Board, depth uint) Move {
 		go func(move Move) {
 			var e Eval
 			e.m = move
-			e.f = MiniMax(board.MakeMove(move), false, board.Turn(), depth)
+			e.f = MiniMax(b.MakeMove(p, move), false, b.turn, depth)
 			scores <- e
 		}(move)
 	}
@@ -77,13 +79,13 @@ func ConcurrentFindBestMove(board board.Board, depth uint) Move {
 
 // FindBestMove finds the best possible move in the current position
 // looking up to depth ahead
-// This is a non-concurrent version that you may want to test first
-func FindBestMove(board board.Board, depth uint) Move {
+// The Function will find the best move on the provided board for the player p that is providedin paramters
+func FindBestMove(b C4Board, p Player, depth uint) Move {
 	var bestMove Move
 	var bestScore float32 = -math.MaxFloat32
 
-	for _, move := range board.LegalMoves() {
-		if score := MiniMax(board.MakeMove(move), false, board.Turn(), depth); score > bestScore {
+	for _, move := range b.LegalMoves() {
+		if score := MiniMax(b.MakeMove(p, move), false, b.turn, depth); score > bestScore {
 			bestMove = move
 			bestScore = score
 		}

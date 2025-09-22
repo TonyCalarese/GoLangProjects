@@ -78,7 +78,7 @@ func promptSelction() int {
 
 		fmt.Println("Please select a program to run (0 to quit):")
 		for _, k := range keys {
-			if k !-= 0 { //We don't need to Print the Quit option here as it is in the prompt.
+			if k != 0 { //We don't need to Print the Quit option here as it is in the prompt.
 				fmt.Printf("  %2d) %s\n", k, programs[k].Name)
 			}
 		}

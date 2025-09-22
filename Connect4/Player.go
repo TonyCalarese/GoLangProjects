@@ -4,21 +4,12 @@ package connect4
 type Piece uint
 type Move uint
 
-//Here we will define the player structure to keep track of the player information
+// Here we will define the player structure to keep track of the player information
 type Player struct {
 	Name      string
-	TurnCount int
+	TurnCount func() int // closure that increments and returns the count
 	Piece     Piece
 	IsHuman   bool
-}
-
-//Generic Incrementer closure
-func incrementer() func() int {
-	count := 0
-	return func() int {
-		count++
-		return count
-	}
 }
 
 const PlayerIcon Piece = 1

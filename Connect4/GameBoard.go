@@ -3,47 +3,64 @@ package connect4
 import (
 	"fmt"
 	"strings"
+)
 
-	board "github.com/accal/GoLangProjects/Connect4"
-	player "github.com/accal/GoLangProjects/Connect4")	
-) 
+// ------------------------------------------------------
+// ------------------------------------------------------
+// ------------------------------------------------------
+// ------------------------------------------------------
+// ------------------------------------------------------
+// Structures and basic board functions
+// ------------------------------------------------------
+// ------------------------------------------------------
+// ------------------------------------------------------
+// ------------------------------------------------------
+const (
+	NumRows = 6
+	NumCols = 7
+)
 
-//Define the game board array 
+//------------------------------------------------------
+
+// C4Board holds the board state. Use NumCols / NumRows for array sizes.
 type C4Board struct {
-	numRows  uint := 7               // number of rows in the board
-	numCols  uint := 6               // number of columns in the board
-	position [numCols][numRows]Piece // Main 2D array to hold the pieces in the board
-	colCount [numCols]uint           // how many pieces are in a given column (or how many are "non-empty")
-	turn     Piece                   // who's turn it is to play
+	numRows  uint
+	numCols  uint
+	position [NumCols][NumRows]Piece // position[col][row]
+	colCount [NumCols]uint           // how many pieces are in a given column
+	turn     Player                  // who's turn it is to play
 }
 
-// Board is a generic interface that could represent a board (read position)
-// in many different board games that you will implicitly
-// need to implement in your connect 4 game in the struct C4Board
-// Minimax depends on this interface
-type Board interface {
-	IsWin() bool
-	IsDraw() bool
-	Evaluate(player Piece) float32
-	LegalMoves() []Move
-	MakeMove(move Move) Board
-	Turn() Piece
-	fmt.Stringer
+// Segment is a contiguous four-piece slice used for scoring/checking wins
+type Segment [4]Piece
+
+// NewBoard returns an initialized Connect4 board
+func NewBoard() C4Board {
+	b := C4Board{
+		numRows: NumRows,
+		numCols: NumCols,
+		turn:    Player{Piece: PlayerIcon},
+	}
+	return b
 }
 
-func (board C4Board) String() string {
+// Adjusting the turn with the player piece
+func (b C4Board) adjustTurn(player Player) C4Board {
+	b.turn = player
+	return b
+}
+
+func (b C4Board) String() string {
 	var sb strings.Builder
 
-	if board.numCols == 0 || board.numRows == 0 {
+	if b.numCols == 0 || b.numRows == 0 {
 		return "Empty Board"
 	}
 
-	var sb strings.Builder
-	var j uint
-	for i := int(numRows) - 1; i >= 0; i-- {
+	for i := int(b.numRows) - 1; i >= 0; i-- {
 		sb.WriteString("|")
-		for j = 0; j < board.numCols; j++ {
-			sb.WriteString(board.position[j][i].String())
+		for j := 0; j < int(b.numCols); j++ {
+			sb.WriteString(b.position[j][i].String())
 			sb.WriteString("|")
 		}
 		sb.WriteString("\n")
@@ -52,8 +69,115 @@ func (board C4Board) String() string {
 	return sb.String()
 }
 
-//Function for telling if the game is currently over based upon the evaluations 
-// of the current Board 
+//------------------------------------------------------
+//------------------------------------------------------
+//------------------------------------------------------
+//------------------------------------------------------
+//------------------------------------------------------
+//Player interactions with the board
+//------------------------------------------------------
+//------------------------------------------------------
+//------------------------------------------------------
+//------------------------------------------------------
+//------------------------------------------------------
+
+// GEneric Make Move Functions that is utilized without a column as this will prompt for a column
+// This will then check that the entered in value is a legal move
+func (board C4Board) MakePlayerMove(p Player) C4Board {
+	//If we have no more moves to make because the game is over then whyy do anything
+	// This is also a failsafe for the recursion to prevent an infinite loop
+	if board.IsGameOver() {
+		fmt.Println("The game is over, unexpected MakeMove call...")
+		fmt.Println("Proceeding without making a move...")
+		return board
+	}
+
+	var col Move
+	fmt.Println("Enter a Column you would like to insert in(0-6): ")
+	for {
+		//Going to scan the input, if it is a legal column and is not an error then we want to
+		//make to move and then return the new board
+		if _, err := fmt.Scanln(&col); err == nil && (col <= NumCols || col >= 0) && board.determineIfLegalMove(col) {
+			return board.MakeMove(p, col)
+		} else {
+			fmt.Println("That was not a legal move, please try again: ")
+			return board.MakePlayerMove(p) //Recursively call the function until a legal move is entered
+		}
+
+		return board.MakeMove(p, col)
+	}
+}
+
+// Calulcate that the column provided that was enterered was a legal move
+func (board C4Board) determineIfLegalMove(col Move) bool {
+	for _, value := range board.LegalMoves() {
+		if value == col {
+			return true
+		}
+	}
+	return false
+}
+
+// MakeMove puts a piece in column col.
+// Returns a copy of the board with the move made.
+// Does not check if the column is full (assumes legal move).
+func (board C4Board) MakeMove(p Player, col Move) C4Board {
+	b := board
+	piece := p.Piece
+
+	// board.colCount[col] will be the empty space in the column
+	// technically this can error however it shouldn't be called if
+	// it isn't a legal move
+	b.position[col][board.colCount[col]] = piece
+	b.colCount[col]++
+
+	b.turn = p //Adjust the last turn to the current player
+	if board.IsGameOver() {
+		fmt.Println("THAT'S THE GAME FOLKS!")
+
+		if board.IsDraw() {
+			fmt.Println("IT'S A DRAW!")
+		} else {
+			fmt.Printf("THE WINNER IS: %s\n", p.Name)
+		}
+		fmt.Println("%s\nFinal Board Position:%s\n")
+		fmt.Println(board.String())
+	}
+
+	b.adjustTurn(p)
+	return b
+}
+
+// LegalMoves returns all of the current legal moves.
+// Remember, a move is just the column you can play.
+func (board C4Board) LegalMoves() []Move {
+	// Creates a slice (start empty) to collect legal moves
+	var legalMoves []Move
+
+	// Appends a possible move if it isn't full
+	var i uint
+	for i = 0; i < board.numCols; i++ {
+		if board.colCount[i] < board.numRows {
+			legalMoves = append(legalMoves, Move(i))
+		}
+	}
+
+	return legalMoves
+}
+
+// ------------------------------------------------------
+// ------------------------------------------------------
+// ------------------------------------------------------
+// ------------------------------------------------------
+// ------------------------------------------------------
+// Evaluations on the board current state to determine winners and losers
+// ------------------------------------------------------
+// ------------------------------------------------------
+// ------------------------------------------------------
+// ------------------------------------------------------
+// ------------------------------------------------------
+// Function for telling if the game is currently over based upon the evaluations
+// of the current Board
 func (board C4Board) IsGameOver() bool {
 	return board.IsWin() || board.IsDraw()
 }
@@ -110,8 +234,6 @@ func (board C4Board) Evaluate(player Piece) float32 {
 
 	return totalScore
 }
-
-
 
 // segmentEquivalent checks if all of the pieces in the segment
 // are of the same kind and non empty. Returns true if all pieces
@@ -268,7 +390,7 @@ func CalculateDirection(segments []Segment, player Piece) (score float32) {
 	return
 }
 
-//Need to rewrite
+// Need to rewrite
 func CalculateScore(segment Segment, player Piece) float32 {
 	pieceCount := 0
 	pieceToCount := Empty
@@ -306,98 +428,4 @@ func CalculateScore(segment Segment, player Piece) float32 {
 	}
 
 	return score()
-}
-
-
-
-
-//Player interactions with the board
-
-//GEneric Make Move Functions that is utilized without a column as this will prompt for a column
-// This will then check that the entered in value is a legal move 
-func (board C4Board) MakeMove(player player.Player) Board {
-	//If we have no more moves to make because the game is over then whyy do anything
-	// This is also a failsafe for the recursion to prevent an infinite loop
-	if board.IsGameOver() {
-		fmt.Println("The game is over, unexpected MakeMove call...")
-		fmt.Println("Proceeding without making a move...")
-		return board
-	}
-
-	var col Move
-	fmt.Println("Enter a Column you would like to insert in(0-6): ")
-	for {
-		if _, err := fmt.Scanln(&col); 
-		err == nil && (col <= board.numCols || col >= 0);
-		boarad.determineIfLegalMove(col){ 
-		return col
-	}else{
-		fmt.Println("That was not a legal move, please try again: ")
-		return board.MakeMove(player) //Recursively call the function until a legal move is entered
-	}
-	
-	return board.MakeMove(player, col)
-}
-
-// Calulcate that the column provided that was enterered was a legal move 
-func (board C4Board) determineIfLegalMove(col Move) bool {
-	for _, value := range board.LegalMoves() {
-		if value == col {
-			return true
-		} 
-	}
-	return false
-}
-// MakeMove puts a piece in column col.
-// Returns a copy of the board with the move made.
-// Does not check if the column is full (assumes legal move).
-func (board C4Board) MakeMove(player player.Player, col Move) Board {
-	b := board
-	piece := b.Turn()
-
-	var col Move
-
-	fmt.Println("Enter a Column you would like to insert in(0-6): ")
-	for {
-		if _, err := fmt.Scanln(&col); err == nil && (col <=  || col >= 0) {
-			break
-		}
-	}
-
-	// board.colCount[col] will be the empty space in the column
-	// technically this can error however it shouldn't be called if
-	// it isn't a legal move
-	b.position[col][board.colCount[col]] = piece
-	b.colCount[col]++
-
-	b.turn = b.Turn().opposite()
-	if board.IsGameOver(){
-		fmt.Println("THAT'S THE GAME FOLKS!")
-		
-		if board.IsDraw(){
-			fmt.Println("IT'S A DRAW!")
-		} else {
-			fmt.Printf("THE WINNER IS: %s\n", player.Name)
-		}
-		fmt.Println("%s\nFinal Board Position:%s\n")
-		fmt.Println(board.String())
-	}
-	return b
-}
-
-// LegalMoves returns all of the current legal moves.
-// Remember, a move is just the column you can play.
-func (board C4Board) LegalMoves() []Move {
-	// Creates a slice with the capacity of the max amount of possible moves
-	legalMoves := make([]Move, board.numCols-1, board.numCols+1)
-
-	// Appends a possible move if it isn't full
-	var i uint
-	for i = 0; i < b.numCols; i++ {
-		if board.colCount[i] < b.numRows {
-			legalMoves = append(legalMoves, Move(i))
-		}
-	}
-
-	return legalMoves
 }

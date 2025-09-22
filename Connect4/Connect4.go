@@ -3,9 +3,6 @@ package connect4
 
 import (
 	"fmt"
-
-	board "github.com/accal/GoLangProjects/Connect4"
-	player "github.com/accal/GoLangProjects/Connect4"
 )
 
 // Main function to play the Connect 4 game from list of programs
@@ -15,25 +12,31 @@ import (
 func PlayConnect4() {
 	fmt.Println("------------- Initializing Connect 4 -------------")
 	displayDirections()
-	//Define the initial game board setting the current player's turn to Black
-	var gameBoard board.Board = board.C4Board{turn: player.PlayerIcon}
 
 	//Assign the Players
-	var player1 player.Player = player.Player{Name: "Player", TurnCount: player.incrementer(), Piece: player.PlayerIcon, IsHuman: true}
-	var player2 player.Player = player.Player{Name: "Computer", TurnCount: player.incrementer(), Piece: player.CpuIcon, IsHuman: false}
+	p1Inc := incrementer()
+	p2Inc := incrementer()
+
+	var player1 Player = Player{Name: "Player", TurnCount: p1Inc, Piece: PlayerIcon, IsHuman: true}
+	var player2 Player = Player{Name: "Computer", TurnCount: p2Inc, Piece: CpuIcon, IsHuman: false}
+
+	//Define the initial game board setting the current player's turn to Black
+	var gameBoard C4Board = NewBoard()
 
 	//Main Loop for the game until there is a win or a draw
 	for !gameBoard.IsGameOver() {
 		fmt.Println("%s\nCurrent Board:%s\n")
 		fmt.Printf("%s", gameBoard.String())
 
-		gameBoard = gameBoard.MakeMove(player1, col)
+		// player1 move - for now we pass player and expect player input handled by MakeMove
+		gameBoard = gameBoard.MakePlayerMove(player1)
 		player1.TurnCount()
+
 		if gameBoard.IsGameOver() {
 			break
 		}
 
-		gameBoard = gameBoard.MakeMove(player2, ConcurrentFindBestMove(gameBoard, 3)) //Concurrent without inputted Depth
+		gameBoard = gameBoard.MakeMove(player2, ConcurrentFindBestMove(gameBoard, player2, 3)) //Concurrent without inputted Depth
 		player2.TurnCount()
 		if gameBoard.IsGameOver() {
 			break
@@ -49,4 +52,13 @@ func displayDirections() {
 	fmt.Println("To make a move, enter the column number (0-6) where you want to drop your piece.")
 	fmt.Println("--------------------------------------------------")
 
+}
+
+// Generic Incrementer closure
+func incrementer() func() int {
+	count := 0
+	return func() int {
+		count++
+		return count
+	}
 }
